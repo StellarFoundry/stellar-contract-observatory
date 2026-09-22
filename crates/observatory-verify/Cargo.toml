@@ -10,6 +10,7 @@ description = "Local-versus-deployed verification and reproducibility metadata a
 [dependencies]
 observatory-core.workspace = true
 observatory-deployment.workspace = true
+observatory-interface.workspace = true
 observatory-rpc.workspace = true
 observatory-wasm.workspace = true
 serde.workspace = true

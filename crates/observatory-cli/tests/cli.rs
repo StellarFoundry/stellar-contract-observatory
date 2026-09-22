@@ -191,3 +191,76 @@ fn verbose_writes_diagnostics_to_stderr_and_quiet_suppresses_them() {
         .success()
         .stderr(predicate::str::is_empty());
 }
+
+fn instance_xdr(hash: [u8; 32]) -> String {
+    use stellar_xdr::{
+        ContractDataDurability, ContractDataEntry, ContractExecutable, ContractId, ExtensionPoint,
+        Hash, LedgerEntryData, Limits, ScAddress, ScContractInstance, ScVal, WriteXdr,
+    };
+    let data = LedgerEntryData::ContractData(ContractDataEntry {
+        ext: ExtensionPoint::V0,
+        contract: ScAddress::Contract(ContractId(Hash([9u8; 32]))),
+        key: ScVal::LedgerKeyContractInstance,
+        durability: ContractDataDurability::Persistent,
+        val: ScVal::ContractInstance(ScContractInstance {
+            executable: ContractExecutable::Wasm(Hash(hash)),
+            storage: None,
+        }),
+    });
+    data.to_xdr_base64(Limits::none()).unwrap()
+}
+
+fn code_xdr(wasm: &[u8], hash: [u8; 32]) -> String {
+    use stellar_xdr::{
+        ContractCodeCostInputs, ContractCodeEntry, ContractCodeEntryExt, ContractCodeEntryV1,
+        ExtensionPoint, Hash, LedgerEntryData, Limits, WriteXdr,
+    };
+    let data = LedgerEntryData::ContractCode(ContractCodeEntry {
+        ext: ContractCodeEntryExt::V1(ContractCodeEntryV1 {
+            ext: ExtensionPoint::V0,
+            cost_inputs: ContractCodeCostInputs {
+                ext: ExtensionPoint::V0,
+                n_instructions: 1,
+                n_functions: 1,
+                n_globals: 0,
+                n_table_entries: 0,
+                n_types: 0,
+                n_data_segments: 0,
+                n_elem_segments: 0,
+                n_imports: 0,
+                n_exports: 1,
+                n_data_segment_bytes: 0,
+            },
+        }),
+        hash: Hash(hash),
+        code: wasm.to_vec().try_into().unwrap(),
+    });
+    data.to_xdr_base64(Limits::none()).unwrap()
+}
+
+#[test]
+fn verify_interface_reports_a_match_against_a_fixture() {
+    let wasm = module_with_spec(&[spec_function("hello", &[], Some(ScSpecTypeDef::Bool))]);
+    let contract_id = format!("{}", stellar_strkey::Contract([9u8; 32]));
+    let fixture = format!(
+        r#"{{"getLedgerEntries":{{"__sequence":[{{"entries":[{{"key":"","xdr":"{}"}}]}},{{"entries":[{{"key":"","xdr":"{}"}}]}}]}}}}"#,
+        instance_xdr([7u8; 32]),
+        code_xdr(&wasm, [7u8; 32])
+    );
+    let wasm_file = write_temp(&wasm, ".wasm");
+    let fixture_file = write_temp(fixture.as_bytes(), ".json");
+    binary()
+        .args([
+            "verify",
+            "interface",
+            wasm_file.path().to_str().unwrap(),
+            "--contract",
+            &contract_id,
+            "--rpc-fixture",
+            fixture_file.path().to_str().unwrap(),
+            "--json",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"interface_match\": true"));
+}

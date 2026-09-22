@@ -17,6 +17,7 @@ use std::io::Cursor;
 
 use observatory_core::limits::MAX_SPEC_ENTRIES;
 use observatory_core::{ObservatoryError, Result};
+use observatory_interface::ContractInterface;
 use observatory_rpc::{RpcClient, Transport};
 use serde::{Deserialize, Serialize};
 use stellar_xdr::{Limited, Limits, ReadXdr, ScEnvMetaEntry, ScMetaEntry, ScMetaV0};
@@ -216,6 +217,78 @@ pub fn verify_local_vs_deployed<T: Transport>(
     })
 }
 
+/// Verification that separates artifact identity from interface identity.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct InterfaceVerification {
+    /// The hash-based artifact verification.
+    pub artifact: VerificationResult,
+    /// Whether the local and deployed interfaces are identical, when both are
+    /// known.
+    pub interface_match: Option<bool>,
+    /// Canonical fingerprint of the local interface, when present.
+    pub local_interface_sha256: Option<String>,
+    /// Canonical fingerprint of the deployed interface, when present.
+    pub deployed_interface_sha256: Option<String>,
+    /// A human-readable explanation.
+    pub detail: String,
+}
+
+/// Compare a local artifact's interface against the deployed contract's code.
+///
+/// This never claims source-level verification: it compares interface identity
+/// (canonical fingerprints), separately from the artifact hash comparison.
+pub fn verify_interface<T: Transport>(
+    local_wasm: &[u8],
+    client: &RpcClient<T>,
+    contract_id: &str,
+    network: &str,
+) -> Result<InterfaceVerification> {
+    let artifact = verify_local_vs_deployed(local_wasm, client, contract_id, network)?;
+    let local_interface = ContractInterface::from_wasm(local_wasm).ok();
+    let deployed_wasm = match &artifact.deployed_wasm_hash {
+        Some(hash) => observatory_deployment::deployed_wasm(client, hash)?,
+        None => None,
+    };
+    let deployed_interface =
+        deployed_wasm.and_then(|bytes| ContractInterface::from_wasm(&bytes).ok());
+
+    let local_fingerprint = local_interface
+        .as_ref()
+        .map(ContractInterface::fingerprint)
+        .transpose()?;
+    let deployed_fingerprint = deployed_interface
+        .as_ref()
+        .map(ContractInterface::fingerprint)
+        .transpose()?;
+
+    let (interface_match, detail) = match (&local_fingerprint, &deployed_fingerprint) {
+        (Some(local), Some(deployed)) if local == deployed => (
+            Some(true),
+            "local and deployed interfaces are identical".to_string(),
+        ),
+        (Some(_), Some(_)) => (
+            Some(false),
+            "local and deployed interfaces differ".to_string(),
+        ),
+        (None, _) => (
+            None,
+            "local artifact has no contract specification to compare".to_string(),
+        ),
+        (Some(_), None) => (
+            None,
+            "deployed code could not be fetched or has no contract specification".to_string(),
+        ),
+    };
+
+    Ok(InterfaceVerification {
+        artifact,
+        interface_match,
+        local_interface_sha256: local_fingerprint,
+        deployed_interface_sha256: deployed_fingerprint,
+        detail,
+    })
+}
+
 fn parse_stream<T: ReadXdr>(bytes: &[u8]) -> Result<Vec<T>> {
     let mut limited = Limited::new(Cursor::new(bytes), Limits::none());
     let mut entries = Vec::new();
@@ -237,11 +310,13 @@ fn parse_stream<T: ReadXdr>(bytes: &[u8]) -> Result<Vec<T>> {
 mod tests {
     use super::*;
     use observatory_rpc::{Endpoint, MockTransport};
-    use observatory_testutil::{custom_section, minimal_module};
+    use observatory_testutil::spec::spec_function;
+    use observatory_testutil::{custom_section, minimal_module, module_with_spec};
     use serde_json::json;
     use stellar_xdr::{
+        ContractCodeCostInputs, ContractCodeEntry, ContractCodeEntryExt, ContractCodeEntryV1,
         ContractDataDurability, ContractDataEntry, ContractExecutable, ContractId, ExtensionPoint,
-        Hash, LedgerEntryData, ScAddress, ScContractInstance, ScVal, WriteXdr,
+        Hash, LedgerEntryData, ScAddress, ScContractInstance, ScSpecTypeDef, ScVal, WriteXdr,
     };
 
     fn module_with_env_meta() -> Vec<u8> {
@@ -380,5 +455,82 @@ mod tests {
         let result =
             verify_local_vs_deployed(&minimal_module(), &client, &contract_id, "testnet").unwrap();
         assert_eq!(result.status, VerificationStatus::InsufficientData);
+    }
+
+    fn instance_xdr(hash: [u8; 32]) -> String {
+        let data = LedgerEntryData::ContractData(ContractDataEntry {
+            ext: ExtensionPoint::V0,
+            contract: ScAddress::Contract(ContractId(Hash([9u8; 32]))),
+            key: ScVal::LedgerKeyContractInstance,
+            durability: ContractDataDurability::Persistent,
+            val: ScVal::ContractInstance(ScContractInstance {
+                executable: ContractExecutable::Wasm(Hash(hash)),
+                storage: None,
+            }),
+        });
+        data.to_xdr_base64(Limits::none()).unwrap()
+    }
+
+    fn code_xdr(wasm: &[u8], hash: [u8; 32]) -> String {
+        let data = LedgerEntryData::ContractCode(ContractCodeEntry {
+            ext: ContractCodeEntryExt::V1(ContractCodeEntryV1 {
+                ext: ExtensionPoint::V0,
+                cost_inputs: ContractCodeCostInputs {
+                    ext: ExtensionPoint::V0,
+                    n_instructions: 1,
+                    n_functions: 1,
+                    n_globals: 0,
+                    n_table_entries: 0,
+                    n_types: 0,
+                    n_data_segments: 0,
+                    n_elem_segments: 0,
+                    n_imports: 0,
+                    n_exports: 1,
+                    n_data_segment_bytes: 0,
+                },
+            }),
+            hash: Hash(hash),
+            code: wasm.to_vec().try_into().unwrap(),
+        });
+        data.to_xdr_base64(Limits::none()).unwrap()
+    }
+
+    #[test]
+    fn compares_local_and_deployed_interfaces() {
+        let wasm = module_with_spec(&[spec_function("hello", &[], Some(ScSpecTypeDef::Bool))]);
+        let contract_id = format!("{}", stellar_strkey::Contract([9u8; 32]));
+        let transport = MockTransport::new().with_sequence(
+            "getLedgerEntries",
+            vec![
+                json!({ "entries": [ { "key": "", "xdr": instance_xdr([7u8; 32]) } ] }),
+                json!({ "entries": [ { "key": "", "xdr": code_xdr(&wasm, [7u8; 32]) } ] }),
+            ],
+        );
+        let client = RpcClient::new(Endpoint::parse("https://example.org").unwrap(), transport);
+        let result = verify_interface(&wasm, &client, &contract_id, "testnet").unwrap();
+        assert_eq!(result.interface_match, Some(true));
+        assert!(result.local_interface_sha256.is_some());
+        assert_eq!(
+            result.local_interface_sha256,
+            result.deployed_interface_sha256
+        );
+    }
+
+    #[test]
+    fn detects_differing_deployed_interface() {
+        let local = module_with_spec(&[spec_function("hello", &[], Some(ScSpecTypeDef::Bool))]);
+        let deployed =
+            module_with_spec(&[spec_function("goodbye", &[], Some(ScSpecTypeDef::Bool))]);
+        let contract_id = format!("{}", stellar_strkey::Contract([9u8; 32]));
+        let transport = MockTransport::new().with_sequence(
+            "getLedgerEntries",
+            vec![
+                json!({ "entries": [ { "key": "", "xdr": instance_xdr([7u8; 32]) } ] }),
+                json!({ "entries": [ { "key": "", "xdr": code_xdr(&deployed, [7u8; 32]) } ] }),
+            ],
+        );
+        let client = RpcClient::new(Endpoint::parse("https://example.org").unwrap(), transport);
+        let result = verify_interface(&local, &client, &contract_id, "testnet").unwrap();
+        assert_eq!(result.interface_match, Some(false));
     }
 }

@@ -9,7 +9,7 @@
 //! modelled is intentionally absent rather than guessed.
 
 use std::cell::RefCell;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 use observatory_core::{ObservatoryError, Result};
 use serde::{Deserialize, Serialize};
@@ -292,6 +292,7 @@ impl<T: Transport> RpcClient<T> {
 pub struct MockTransport {
     results: BTreeMap<String, Value>,
     errors: BTreeMap<String, Value>,
+    sequences: RefCell<BTreeMap<String, VecDeque<Value>>>,
     calls: RefCell<Vec<String>>,
 }
 
@@ -306,6 +307,18 @@ impl MockTransport {
     #[must_use]
     pub fn with_result(mut self, method: &str, result: Value) -> Self {
         self.results.insert(method.to_string(), result);
+        self
+    }
+
+    /// Register a sequence of results returned in order for a method.
+    ///
+    /// Calls beyond the sequence fall back to [`MockTransport::with_result`].
+    #[must_use]
+    pub fn with_sequence(self, method: &str, results: Vec<Value>) -> Self {
+        let queue: VecDeque<Value> = results.into_iter().collect();
+        self.sequences
+            .borrow_mut()
+            .insert(method.to_string(), queue);
         self
     }
 
@@ -335,7 +348,9 @@ impl MockTransport {
             .ok_or_else(|| ObservatoryError::rpc("RPC fixture must be a JSON object"))?;
         let mut transport = MockTransport::new();
         for (method, result) in object {
-            if let Some(error) = result.get("__error") {
+            if let Some(sequence) = result.get("__sequence").and_then(Value::as_array) {
+                transport = transport.with_sequence(method, sequence.clone());
+            } else if let Some(error) = result.get("__error") {
                 let code = error.get("code").and_then(Value::as_i64).unwrap_or(-32000);
                 let message = error
                     .get("message")
@@ -357,6 +372,11 @@ impl Transport for MockTransport {
             .and_then(Value::as_str)
             .ok_or_else(|| ObservatoryError::rpc("mock request missing method"))?;
         self.calls.borrow_mut().push(method.to_string());
+        if let Some(queue) = self.sequences.borrow_mut().get_mut(method) {
+            if let Some(result) = queue.pop_front() {
+                return Ok(json!({ "jsonrpc": "2.0", "id": 1, "result": result }));
+            }
+        }
         if let Some(error) = self.errors.get(method) {
             return Ok(json!({ "jsonrpc": "2.0", "id": 1, "error": error.clone() }));
         }
@@ -458,6 +478,17 @@ mod tests {
         assert_eq!(client.get_latest_ledger().unwrap().sequence, 9);
         assert!(client.get_network().is_err());
         assert!(MockTransport::from_json(&json!([])).is_err());
+    }
+
+    #[test]
+    fn fixture_sequences_return_results_in_order() {
+        let fixture = json!({
+            "getLatestLedger": { "__sequence": [ { "sequence": 1 }, { "sequence": 2 } ] }
+        });
+        let transport = MockTransport::from_json(&fixture).unwrap();
+        let client = RpcClient::new(Endpoint::parse("https://example.org").unwrap(), transport);
+        assert_eq!(client.get_latest_ledger().unwrap().sequence, 1);
+        assert_eq!(client.get_latest_ledger().unwrap().sequence, 2);
     }
 
     #[test]

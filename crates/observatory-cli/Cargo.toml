@@ -33,6 +33,7 @@ serde_json.workspace = true
 [dev-dependencies]
 observatory-testutil.workspace = true
 stellar-xdr.workspace = true
+stellar-strkey.workspace = true
 tempfile.workspace = true
 assert_cmd = "2"
 predicates = "3"

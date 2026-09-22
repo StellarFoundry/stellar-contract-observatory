@@ -39,6 +39,10 @@ stellar-contract-observatory deployment inspect C... \
 
 An error response is expressed as `{ "__error": { "code": -32000, "message": "..." } }`.
 
+A method that is called several times can return results in order using
+`{ "__sequence": [ result1, result2 ] }`. This is how interface verification
+supplies the instance entry first and the code entry second.
+
 ## Deployed WASM retrieval
 
 `deployment::deployed_wasm(client, wasm_hash_hex)` fetches the contract code

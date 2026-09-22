@@ -160,6 +160,20 @@ enum VerifyCommand {
         #[arg(long, default_value = "testnet")]
         network: String,
     },
+    /// Compare the local interface against the deployed contract's interface.
+    Interface {
+        /// Path to a `.wasm` file.
+        wasm: PathBuf,
+        /// Contract id (C... strkey).
+        #[arg(long)]
+        contract: String,
+        /// JSON fixture mapping RPC method to result.
+        #[arg(long)]
+        rpc_fixture: PathBuf,
+        /// Network label.
+        #[arg(long, default_value = "testnet")]
+        network: String,
+    },
     /// Parse and print a build metadata JSON document.
     Metadata {
         /// Path to a build metadata JSON file.
@@ -413,6 +427,24 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
                 VerificationStatus::InsufficientData | VerificationStatus::Error => {
                     ObservatoryExit::InsufficientData
                 }
+            })
+        }
+        Command::Verify(VerifyCommand::Interface {
+            wasm,
+            contract,
+            rpc_fixture,
+            network,
+        }) => {
+            let bytes = observatory_wasm::load_file(wasm)?;
+            let client = fixture_client(rpc_fixture)?;
+            let result = observatory_verify::verify_interface(&bytes, &client, contract, network)?;
+            emit(format, "verify.interface", &result, || {
+                print_interface_verification(&result);
+            })?;
+            Ok(match result.interface_match {
+                Some(true) => ObservatoryExit::Success,
+                Some(false) => ObservatoryExit::Mismatch,
+                None => ObservatoryExit::InsufficientData,
             })
         }
         Command::Verify(VerifyCommand::Metadata { file }) => {
@@ -691,6 +723,21 @@ fn print_deployment(info: &observatory_deployment::DeploymentInfo) {
         "wasm_hash: {}",
         info.wasm_hash.as_deref().unwrap_or("<unknown>")
     );
+}
+
+fn print_interface_verification(result: &observatory_verify::InterfaceVerification) {
+    match result.interface_match {
+        Some(true) => println!("interface: identical"),
+        Some(false) => println!("interface: differs"),
+        None => println!("interface: unknown ({})", result.detail),
+    }
+    if let Some(local) = &result.local_interface_sha256 {
+        println!("local_interface_sha256: {local}");
+    }
+    if let Some(deployed) = &result.deployed_interface_sha256 {
+        println!("deployed_interface_sha256: {deployed}");
+    }
+    println!("artifact: {:?}", result.artifact.status);
 }
 
 fn print_verification(result: &observatory_verify::VerificationResult) {
