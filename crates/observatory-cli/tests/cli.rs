@@ -264,3 +264,24 @@ fn verify_interface_reports_a_match_against_a_fixture() {
         .success()
         .stdout(predicate::str::contains("\"interface_match\": true"));
 }
+
+#[test]
+fn diff_markdown_renders_severity_sections() {
+    let old = write_temp(
+        &module_with_spec(&[spec_function("a", &[], None), spec_function("b", &[], None)]),
+        ".wasm",
+    );
+    let new = write_temp(&module_with_spec(&[spec_function("a", &[], None)]), ".wasm");
+    binary()
+        .args([
+            "diff",
+            old.path().to_str().unwrap(),
+            new.path().to_str().unwrap(),
+            "--markdown",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("# Interface diff"))
+        .stdout(predicate::str::contains("## Breaking"))
+        .stdout(predicate::str::contains("`function::b`"));
+}

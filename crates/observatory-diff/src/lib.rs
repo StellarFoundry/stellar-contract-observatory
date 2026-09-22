@@ -161,6 +161,36 @@ pub fn diff(old: &ContractInterface, new: &ContractInterface) -> InterfaceDiff {
     InterfaceDiff { changes, summary }
 }
 
+/// Render a diff as deterministic Markdown, grouped by severity.
+#[must_use]
+pub fn render_markdown(result: &InterfaceDiff) -> String {
+    let mut out = String::from("# Interface diff\n\n");
+    out.push_str(&format!(
+        "- Breaking: {}\n- Non-breaking: {}\n- Informational: {}\n",
+        result.summary.breaking, result.summary.non_breaking, result.summary.informational
+    ));
+    for (severity, title) in [
+        (Severity::Breaking, "Breaking"),
+        (Severity::NonBreaking, "Non-breaking"),
+        (Severity::Informational, "Informational"),
+    ] {
+        out.push_str(&format!("\n## {title}\n\n"));
+        let mut any = false;
+        for change in result
+            .changes
+            .iter()
+            .filter(|change| change.severity == severity)
+        {
+            out.push_str(&format!("- `{}`: {}\n", change.path, change.detail));
+            any = true;
+        }
+        if !any {
+            out.push_str("_None._\n");
+        }
+    }
+    out
+}
+
 fn diff_functions(old: &ContractInterface, new: &ContractInterface, out: &mut Vec<Change>) {
     // Same-name changes.
     for function in &old.functions {
@@ -691,5 +721,20 @@ mod tests {
             .any(|change| change.kind == ChangeKind::FunctionRenamed));
         assert_eq!(result.summary.breaking, 2);
         assert_eq!(result.summary.non_breaking, 1);
+    }
+
+    #[test]
+    fn renders_deterministic_markdown() {
+        let old = interface(vec![
+            spec_function("a", &[("x", ScSpecTypeDef::U32)], None),
+            spec_function("b", &[], None),
+        ]);
+        let new = interface(vec![spec_function("a", &[("x", ScSpecTypeDef::U32)], None)]);
+        let result = diff(&old, &new);
+        let markdown = render_markdown(&result);
+        assert!(markdown.starts_with("# Interface diff"));
+        assert!(markdown.contains("## Breaking"));
+        assert!(markdown.contains("`function::b`"));
+        assert_eq!(markdown, render_markdown(&result));
     }
 }

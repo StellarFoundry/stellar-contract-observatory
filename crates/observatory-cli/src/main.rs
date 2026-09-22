@@ -97,6 +97,9 @@ enum Command {
         old: PathBuf,
         /// Updated contract WASM.
         new: PathBuf,
+        /// Render the diff as Markdown (human mode only).
+        #[arg(long)]
+        markdown: bool,
     },
     /// Assess compatibility of two contract interfaces.
     Compat {
@@ -353,11 +356,15 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
             emit(format, "events", &payload, || print_events(&payload))?;
             Ok(ObservatoryExit::Success)
         }
-        Command::Diff { old, new } => {
+        Command::Diff { old, new, markdown } => {
             let old_interface = load_interface(old)?;
             let new_interface = load_interface(new)?;
             let result = diff(&old_interface, &new_interface);
-            emit(format, "diff", &result, || print_diff(&result))?;
+            if *markdown && format == OutputFormat::Human {
+                print!("{}", observatory_diff::render_markdown(&result));
+            } else {
+                emit(format, "diff", &result, || print_diff(&result))?;
+            }
             Ok(ObservatoryExit::Success)
         }
         Command::Compat { old, new, policy } => {

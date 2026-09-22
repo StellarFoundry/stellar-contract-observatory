@@ -37,6 +37,10 @@ Human mode prints one line per change with a marker (`!` breaking, `+`
 non-breaking, `~` informational). JSON mode emits the full `InterfaceDiff`,
 including `old`/`new` renderings for signature and type changes.
 
+`diff --markdown` renders a deterministic Markdown report grouped by severity,
+suitable for pull requests and reports. Identical inputs produce identical
+Markdown.
+
 ## Rename detection
 
 A rename is reported as a single `function_renamed` change only when it is
