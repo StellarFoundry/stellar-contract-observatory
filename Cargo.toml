@@ -13,6 +13,8 @@ members = [
     "crates/observatory-verify",
     "crates/observatory-audit",
     "crates/observatory-output",
+    "crates/observatory-platform",
+    "crates/observatory-api",
     "crates/observatory-testutil",
     "crates/observatory-cli",
 ]
@@ -38,6 +40,8 @@ hex = "0.4"
 wasmparser = "0.259"
 stellar-xdr = { version = "28.0.0", features = ["serde", "base64", "alloc"] }
 stellar-strkey = "0.0.18"
+base64 = "0.22"
+getrandom = "0.2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tempfile = "3"
@@ -55,6 +59,8 @@ observatory-deployment = { path = "crates/observatory-deployment", version = "0.
 observatory-verify = { path = "crates/observatory-verify", version = "0.1.0" }
 observatory-audit = { path = "crates/observatory-audit", version = "0.1.0" }
 observatory-output = { path = "crates/observatory-output", version = "0.1.0" }
+observatory-platform = { path = "crates/observatory-platform", version = "0.1.0" }
+observatory-api = { path = "crates/observatory-api", version = "0.1.0" }
 observatory-testutil = { path = "crates/observatory-testutil", version = "0.1.0" }
 
 [profile.release]
