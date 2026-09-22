@@ -50,6 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-- No live HTTP RPC transport is shipped yet. Deployment and verification run
-  against deterministic RPC fixtures.
+- No live HTTP RPC transport is shipped yet. Deployment and verification run against deterministic RPC fixtures.
 - The audit crate is not a security auditor.
+
+### Changed
+
+- The repository was renamed to `stellar-contract-platform`. The CLI binary
+  (`stellar-contract-observatory`), the `observatory-*` crates, and the product
+  name remain unchanged; only the repository URL and clone instructions changed.

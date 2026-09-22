@@ -5,7 +5,7 @@ checks support.
 
 ## Repository
 
-`StellarFoundry/stellar-contract-observatory`, default branch `main`.
+`StellarFoundry/stellar-contract-platform`, default branch `main`.
 
 ## Architecture
 

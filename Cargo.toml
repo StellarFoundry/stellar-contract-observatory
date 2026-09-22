@@ -24,8 +24,8 @@ version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["StellarFoundry"]
-repository = "https://github.com/StellarFoundry/stellar-contract-observatory"
-homepage = "https://github.com/StellarFoundry/stellar-contract-observatory"
+repository = "https://github.com/StellarFoundry/stellar-contract-platform"
+homepage = "https://github.com/StellarFoundry/stellar-contract-platform"
 description = "Contract intelligence, inspection, interface analysis, compatibility, deployment verification, and reproducibility tooling for Stellar and Soroban contracts."
 rust-version = "1.85"
 

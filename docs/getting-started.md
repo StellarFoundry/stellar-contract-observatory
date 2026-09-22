@@ -5,8 +5,8 @@
 Build from source (a recent stable Rust toolchain is required):
 
 ```bash
-git clone https://github.com/StellarFoundry/stellar-contract-observatory
-cd stellar-contract-observatory
+git clone https://github.com/StellarFoundry/stellar-contract-platform
+cd stellar-contract-platform
 cargo build --release
 ```
 

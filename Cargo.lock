@@ -785,6 +785,7 @@ dependencies = [
  "predicates",
  "serde",
  "serde_json",
+ "stellar-strkey 0.0.18",
  "stellar-xdr",
  "tempfile",
 ]
@@ -929,6 +930,7 @@ dependencies = [
  "hex",
  "observatory-core",
  "observatory-deployment",
+ "observatory-interface",
  "observatory-rpc",
  "observatory-testutil",
  "observatory-wasm",
