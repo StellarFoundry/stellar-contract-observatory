@@ -1,0 +1,14 @@
+﻿[package]
+name = "observatory-events"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Soroban contract event normalization, filtering, and JSON representation."
+
+[dependencies]
+observatory-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+stellar-xdr.workspace = true
