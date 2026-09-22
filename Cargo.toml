@@ -1,0 +1,63 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/observatory-core",
+    "crates/observatory-wasm",
+    "crates/observatory-spec",
+    "crates/observatory-interface",
+    "crates/observatory-events",
+    "crates/observatory-diff",
+    "crates/observatory-compat",
+    "crates/observatory-rpc",
+    "crates/observatory-deployment",
+    "crates/observatory-verify",
+    "crates/observatory-audit",
+    "crates/observatory-output",
+    "crates/observatory-testutil",
+    "crates/observatory-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["StellarFoundry"]
+repository = "https://github.com/StellarFoundry/stellar-contract-observatory"
+homepage = "https://github.com/StellarFoundry/stellar-contract-observatory"
+description = "Contract intelligence, inspection, interface analysis, compatibility, deployment verification, and reproducibility tooling for Stellar and Soroban contracts."
+rust-version = "1.85"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+sha2 = "0.10"
+hex = "0.4"
+wasmparser = "0.259"
+stellar-xdr = { version = "28.0.0", features = ["serde", "base64", "alloc"] }
+stellar-strkey = "0.0.18"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tempfile = "3"
+wat = "1"
+
+observatory-core = { path = "crates/observatory-core", version = "0.1.0" }
+observatory-wasm = { path = "crates/observatory-wasm", version = "0.1.0" }
+observatory-spec = { path = "crates/observatory-spec", version = "0.1.0" }
+observatory-interface = { path = "crates/observatory-interface", version = "0.1.0" }
+observatory-events = { path = "crates/observatory-events", version = "0.1.0" }
+observatory-diff = { path = "crates/observatory-diff", version = "0.1.0" }
+observatory-compat = { path = "crates/observatory-compat", version = "0.1.0" }
+observatory-rpc = { path = "crates/observatory-rpc", version = "0.1.0" }
+observatory-deployment = { path = "crates/observatory-deployment", version = "0.1.0" }
+observatory-verify = { path = "crates/observatory-verify", version = "0.1.0" }
+observatory-audit = { path = "crates/observatory-audit", version = "0.1.0" }
+observatory-output = { path = "crates/observatory-output", version = "0.1.0" }
+observatory-testutil = { path = "crates/observatory-testutil", version = "0.1.0" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

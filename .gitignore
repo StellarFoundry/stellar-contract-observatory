@@ -1,0 +1,37 @@
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock.orig
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local artifacts
+dist/
+coverage/
+*.report.json
+
+# Fuzzing
+fuzz/target/
+fuzz/corpus/
+fuzz/artifacts/
+fuzz/coverage/
+
+# Python tooling (scripts)
+__pycache__/
+*.py[cod]
+.venv/

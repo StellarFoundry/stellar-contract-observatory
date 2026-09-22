@@ -1,0 +1,12 @@
+[package]
+name = "observatory-testutil"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Deterministic fixture builders shared by Observatory test suites."
+
+[dependencies]
+observatory-core.workspace = true
+stellar-xdr.workspace = true
