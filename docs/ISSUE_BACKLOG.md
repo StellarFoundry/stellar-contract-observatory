@@ -4,7 +4,7 @@ This document summarizes the issue backlog by phase. It is a map, not a
 contract. Every issue is real engineering work derived from the current
 architecture; there are no placeholder or filler issues.
 
-As of the initial implementation the backlog contains **40 open issues**.
+As of the platform/API increment the backlog contains **60 open issues**.
 
 ## How to read an issue
 
@@ -46,10 +46,33 @@ point or reward total.
 
 ```
 #13 live-rpc ──► #14 deployed-wasm ──► #15 verify-interface
-        └─────► #36 event-rpc
+        ├─────► #36 event-rpc
+        └─────► #58 ssrf (must land with #13)
+#41 api-key-endpoints ──► #54 key-rotation
+#47 webhook-registration ──► #57 webhook-delivery
+#13 ──► #52 api-verify-endpoint
+#36 ──► #53 api-events-endpoint
 ```
 
 No circular dependencies exist.
+
+## Platform and API themes (issues #41–#60)
+
+After the developer-platform layer landed, the backlog was extended from the
+actual new surface:
+
+| Theme | Example issues |
+| ----- | -------------- |
+| API key management and persistence | #41, #42, #54 |
+| Authorization and audit | #43 |
+| Rate limits and CORS | #44, #56 |
+| OpenAPI and schemas | #45 |
+| Observability (metrics, counters) | #46, #55 |
+| Webhooks | #47, #57 |
+| Background jobs | #48 |
+| SDKs (Python, TypeScript, Rust) | #49, #50, #51 |
+| API + live RPC integration | #52, #53, #58 |
+| HTTP hardening and load | #59, #60 |
 
 ## Scope note
 
