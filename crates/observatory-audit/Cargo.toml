@@ -1,0 +1,19 @@
+[package]
+name = "observatory-audit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Bounded, deterministic contract interface and artifact heuristics."
+
+[dependencies]
+observatory-core.workspace = true
+observatory-interface.workspace = true
+observatory-spec.workspace = true
+observatory-wasm.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+observatory-testutil.workspace = true
+stellar-xdr.workspace = true

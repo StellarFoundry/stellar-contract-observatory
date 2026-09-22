@@ -1,0 +1,13 @@
+﻿[package]
+name = "observatory-output"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Stable machine-readable and human-readable report rendering."
+
+[dependencies]
+observatory-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
