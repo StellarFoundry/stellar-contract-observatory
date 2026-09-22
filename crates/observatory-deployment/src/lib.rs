@@ -5,12 +5,13 @@
 //! the deployed WASM hash. The ledger key and entry are real Stellar XDR types;
 //! nothing about the RPC shape is invented.
 
+use observatory_core::limits::MAX_WASM_BYTES;
 use observatory_core::{ObservatoryError, Result};
 use observatory_rpc::{LedgerEntryResult, RpcClient, Transport};
 use serde::Serialize;
 use stellar_xdr::{
     ContractDataDurability, ContractExecutable, ContractId, Hash, LedgerEntryData, LedgerKey,
-    LedgerKeyContractData, Limits, ReadXdr, ScAddress, ScVal, WriteXdr,
+    LedgerKeyContractCode, LedgerKeyContractData, Limits, ReadXdr, ScAddress, ScVal, WriteXdr,
 };
 
 /// Information recovered about a deployed contract.
@@ -91,12 +92,49 @@ pub fn decode_wasm_hash(entry: &LedgerEntryResult) -> Result<Option<String>> {
     }
 }
 
+/// Fetch and decode the deployed WASM code for a WASM hash (hex).
+///
+/// Returns `None` when no code entry exists for the hash.
+pub fn deployed_wasm<T: Transport>(
+    client: &RpcClient<T>,
+    wasm_hash_hex: &str,
+) -> Result<Option<Vec<u8>>> {
+    let bytes = hex::decode(wasm_hash_hex.trim())
+        .map_err(|error| ObservatoryError::invalid(format!("invalid wasm hash: {error}")))?;
+    let hash: [u8; 32] = bytes
+        .try_into()
+        .map_err(|_| ObservatoryError::invalid("wasm hash must be 32 bytes"))?;
+    let key = LedgerKey::ContractCode(LedgerKeyContractCode { hash: Hash(hash) });
+    let key_base64 = key.to_xdr_base64(Limits::none()).map_err(|error| {
+        ObservatoryError::internal(format!("failed to encode ledger key: {error}"))
+    })?;
+    let entries = client.get_ledger_entries(&[key_base64])?;
+    let Some(entry) = entries.first() else {
+        return Ok(None);
+    };
+    let data = LedgerEntryData::from_xdr_base64(&entry.xdr, Limits::none())
+        .map_err(|error| ObservatoryError::decode(format!("invalid ledger entry XDR: {error}")))?;
+    let LedgerEntryData::ContractCode(code) = data else {
+        return Ok(None);
+    };
+    let wasm = code.code.to_vec();
+    if wasm.len() > MAX_WASM_BYTES {
+        return Err(ObservatoryError::invalid(format!(
+            "deployed WASM is {} bytes, exceeding the {} byte limit",
+            wasm.len(),
+            MAX_WASM_BYTES
+        )));
+    }
+    Ok(Some(wasm))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use observatory_rpc::{Endpoint, MockTransport};
     use serde_json::json;
     use stellar_xdr::{
+        ContractCodeCostInputs, ContractCodeEntry, ContractCodeEntryExt, ContractCodeEntryV1,
         ContractDataEntry, ExtensionPoint, LedgerEntryData, ScContractInstance, WriteXdr,
     };
 
@@ -119,6 +157,35 @@ mod tests {
             key: String::new(),
             xdr: data.to_xdr_base64(Limits::none()).unwrap(),
             last_modified_ledger_seq: Some(123),
+            live_until_ledger_seq: None,
+        }
+    }
+
+    fn code_entry(code: &[u8]) -> LedgerEntryResult {
+        let data = LedgerEntryData::ContractCode(ContractCodeEntry {
+            ext: ContractCodeEntryExt::V1(ContractCodeEntryV1 {
+                ext: ExtensionPoint::V0,
+                cost_inputs: ContractCodeCostInputs {
+                    ext: ExtensionPoint::V0,
+                    n_instructions: 1,
+                    n_functions: 1,
+                    n_globals: 0,
+                    n_table_entries: 0,
+                    n_types: 0,
+                    n_data_segments: 0,
+                    n_elem_segments: 0,
+                    n_imports: 0,
+                    n_exports: 1,
+                    n_data_segment_bytes: 0,
+                },
+            }),
+            hash: Hash([5u8; 32]),
+            code: code.to_vec().try_into().unwrap(),
+        });
+        LedgerEntryResult {
+            key: String::new(),
+            xdr: data.to_xdr_base64(Limits::none()).unwrap(),
+            last_modified_ledger_seq: Some(1),
             live_until_ledger_seq: None,
         }
     }
@@ -173,5 +240,37 @@ mod tests {
         let info = inspect(&client, &contract_id()).unwrap();
         assert!(!info.found);
         assert_eq!(info.wasm_hash, None);
+    }
+
+    #[test]
+    fn fetches_deployed_wasm_bytes() {
+        let wasm = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
+        let entry = code_entry(&wasm);
+        let transport = MockTransport::new().with_result(
+            "getLedgerEntries",
+            json!({ "entries": [ { "key": "", "xdr": entry.xdr } ] }),
+        );
+        let client = RpcClient::new(Endpoint::parse("https://example.org").unwrap(), transport);
+        let fetched = deployed_wasm(&client, &hex::encode([5u8; 32])).unwrap();
+        assert_eq!(fetched, Some(wasm.to_vec()));
+    }
+
+    #[test]
+    fn deployed_wasm_missing_entry_is_none() {
+        let transport =
+            MockTransport::new().with_result("getLedgerEntries", json!({ "entries": [] }));
+        let client = RpcClient::new(Endpoint::parse("https://example.org").unwrap(), transport);
+        assert_eq!(
+            deployed_wasm(&client, &hex::encode([5u8; 32])).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn deployed_wasm_rejects_bad_hash() {
+        let transport = MockTransport::new();
+        let client = RpcClient::new(Endpoint::parse("https://example.org").unwrap(), transport);
+        assert!(deployed_wasm(&client, "not-hex").is_err());
+        assert!(deployed_wasm(&client, &hex::encode([1u8; 8])).is_err());
     }
 }

@@ -39,6 +39,17 @@ stellar-contract-observatory deployment inspect C... \
 
 An error response is expressed as `{ "__error": { "code": -32000, "message": "..." } }`.
 
+## Deployed WASM retrieval
+
+`deployment::deployed_wasm(client, wasm_hash_hex)` fetches the contract code
+entry for a WASM hash and decodes the bytes. It builds a
+`LedgerKey::ContractCode` key, calls `getLedgerEntries`, and decodes the
+returned `LedgerEntryData`. It returns `None` when no code entry exists and
+rejects hashes that are not 32 bytes or decode larger than the WASM size limit.
+
+This enables interface comparison between a local artifact and the deployed
+code (tracked as a follow-up).
+
 ## Reported fields
 
 `contract_id`, `wasm_hash`, `last_modified_ledger_seq`,
