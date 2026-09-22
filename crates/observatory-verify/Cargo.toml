@@ -1,0 +1,23 @@
+﻿[package]
+name = "observatory-verify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Local-versus-deployed verification and reproducibility metadata analysis."
+
+[dependencies]
+observatory-core.workspace = true
+observatory-deployment.workspace = true
+observatory-rpc.workspace = true
+observatory-wasm.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+stellar-xdr.workspace = true
+
+[dev-dependencies]
+observatory-testutil.workspace = true
+stellar-xdr.workspace = true
+stellar-strkey.workspace = true
+hex.workspace = true

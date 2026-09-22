@@ -1,0 +1,13 @@
+﻿[package]
+name = "observatory-rpc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Stellar RPC transport abstraction, typed models, and deterministic mock transport."
+
+[dependencies]
+observatory-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
