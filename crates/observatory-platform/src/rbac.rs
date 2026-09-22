@@ -1,9 +1,9 @@
 //! Role-based access control.
 //!
-//! Authorization is deliberately separate from authentication: a [`Principal`]
-//! proves *who* is calling, and this module answers *whether* they may perform a
-//! [`Permission`]. Roles are hierarchical: `admin ⊃ maintainer ⊃ developer ⊃
-//! viewer`.
+//! Authorization is deliberately separate from authentication: a
+//! [`crate::auth::Principal`] proves *who* is calling, and this module answers
+//! *whether* they may perform a [`Permission`]. Roles are hierarchical:
+//! `admin ⊃ maintainer ⊃ developer ⊃ viewer`.
 
 use serde::{Deserialize, Serialize};
 
