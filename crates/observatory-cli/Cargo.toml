@@ -1,0 +1,36 @@
+﻿[package]
+name = "observatory-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "The stellar-contract-observatory command-line interface."
+
+[[bin]]
+name = "stellar-contract-observatory"
+path = "src/main.rs"
+
+[dependencies]
+observatory-core.workspace = true
+observatory-wasm.workspace = true
+observatory-spec.workspace = true
+observatory-interface.workspace = true
+observatory-events.workspace = true
+observatory-diff.workspace = true
+observatory-compat.workspace = true
+observatory-rpc.workspace = true
+observatory-deployment.workspace = true
+observatory-verify.workspace = true
+observatory-audit.workspace = true
+observatory-output.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+observatory-testutil.workspace = true
+stellar-xdr.workspace = true
+tempfile.workspace = true
+assert_cmd = "2"
+predicates = "3"
