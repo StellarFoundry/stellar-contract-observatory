@@ -2,7 +2,7 @@
 
 This document summarizes the issue backlog by phase. It is a map, not a
 contract. Every issue is real engineering work derived from the current
-architecture; there are no placeholder or reward-driven issues.
+architecture; there are no placeholder or filler issues.
 
 As of the initial implementation the backlog contains **40 open issues**.
 
