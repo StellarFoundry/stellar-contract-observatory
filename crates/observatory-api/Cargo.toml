@@ -1,0 +1,20 @@
+[package]
+name = "observatory-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Versioned REST API exposing the Observatory contract-intelligence services."
+
+[dependencies]
+observatory-core.workspace = true
+observatory-platform.workspace = true
+observatory-output.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+base64.workspace = true
+
+[dev-dependencies]
+observatory-testutil.workspace = true
+stellar-xdr.workspace = true
