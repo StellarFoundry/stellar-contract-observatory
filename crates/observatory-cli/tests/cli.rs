@@ -168,3 +168,26 @@ fn api_openapi_documents_contract_routes() {
         .stdout(predicate::str::contains("/api/v1/contracts/inspect"))
         .stdout(predicate::str::contains("securitySchemes"));
 }
+
+#[test]
+fn format_json_matches_the_json_flag() {
+    binary()
+        .args(["doctor", "--format", "json"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"schema_version\""));
+}
+
+#[test]
+fn verbose_writes_diagnostics_to_stderr_and_quiet_suppresses_them() {
+    binary()
+        .args(["doctor", "--verbose"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("running `doctor`"));
+    binary()
+        .args(["doctor"])
+        .assert()
+        .success()
+        .stderr(predicate::str::is_empty());
+}

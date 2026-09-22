@@ -8,9 +8,10 @@ stellar-contract-observatory [OPTIONS] <COMMAND>
 
 | Option | Description |
 | ------ | ----------- |
-| `--json` | Emit a machine-readable JSON report envelope. |
-| `-q`, `--quiet` | Suppress non-essential output. |
-| `-v`, `--verbose` | Increase verbosity (repeatable). |
+| `--json` | Emit a machine-readable JSON report envelope (alias for `--format json`). |
+| `--format <text\|json>` | Output format; defaults to `text`. |
+| `-q`, `--quiet` | Suppress non-essential diagnostics (progress/notes). Primary results still print. |
+| `-v`, `--verbose` | Emit diagnostics to stderr (repeatable). |
 | `-h`, `--help` | Print help. |
 | `-V`, `--version` | Print version. |
 

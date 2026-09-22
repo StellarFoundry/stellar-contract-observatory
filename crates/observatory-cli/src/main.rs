@@ -33,9 +33,13 @@ use serde::Serialize;
     long_about = None
 )]
 struct Cli {
-    /// Emit machine-readable JSON.
+    /// Emit machine-readable JSON (alias for `--format json`).
     #[arg(long, global = true)]
     json: bool,
+
+    /// Output format.
+    #[arg(long, value_enum, default_value_t = FormatArg::Text, global = true)]
+    format: FormatArg,
 
     /// Increase logging verbosity (repeatable).
     #[arg(short, long, global = true, action = clap::ArgAction::Count)]
@@ -194,12 +198,44 @@ enum ApiCommand {
     Openapi,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+enum FormatArg {
+    /// Human-readable text.
+    Text,
+    /// Machine-readable JSON.
+    Json,
+}
+
+impl From<FormatArg> for OutputFormat {
+    fn from(value: FormatArg) -> Self {
+        match value {
+            FormatArg::Text => OutputFormat::Human,
+            FormatArg::Json => OutputFormat::Json,
+        }
+    }
+}
+
+fn command_name(command: &Command) -> &'static str {
+    match command {
+        Command::Inspect { .. } => "inspect",
+        Command::Spec { .. } => "spec",
+        Command::Events { .. } => "events",
+        Command::Diff { .. } => "diff",
+        Command::Compat { .. } => "compat",
+        Command::Fingerprint { .. } => "fingerprint",
+        Command::Deployment(_) => "deployment",
+        Command::Verify(_) => "verify",
+        Command::Api(_) => "api",
+        Command::Doctor => "doctor",
+    }
+}
+
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let format = if cli.json {
         OutputFormat::Json
     } else {
-        OutputFormat::Human
+        cli.format.into()
     };
     match run(&cli, format) {
         Ok(code) => ExitCode::from(code.code()),
@@ -211,6 +247,13 @@ fn main() -> ExitCode {
 }
 
 fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
+    if cli.verbose > 0 && !cli.quiet {
+        eprintln!(
+            "{}: running `{}` (format={format})",
+            observatory_core::TOOL_NAME,
+            command_name(&cli.command)
+        );
+    }
     match &cli.command {
         Command::Inspect { wasm, security } => {
             let bytes = observatory_wasm::load_file(wasm)?;
