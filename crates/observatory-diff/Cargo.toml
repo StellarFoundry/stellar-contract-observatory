@@ -1,0 +1,18 @@
+﻿[package]
+name = "observatory-diff"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Deterministic diffing of two contract interfaces."
+
+[dependencies]
+observatory-core.workspace = true
+observatory-interface.workspace = true
+observatory-spec.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+observatory-testutil.workspace = true
+stellar-xdr.workspace = true
