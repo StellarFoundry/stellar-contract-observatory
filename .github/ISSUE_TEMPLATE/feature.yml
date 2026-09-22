@@ -1,0 +1,65 @@
+name: Feature request
+description: Propose a concrete engineering task
+title: "feat: "
+labels: ["type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep the scope concrete and testable. One capability per issue.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Current state and why this matters.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is missing or wrong today?
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: A single, concrete outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is in scope. List the work.
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this issue will not do.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Testable statements that define done.
+    validations:
+      required: true
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing expectations
+      description: What tests must be added.
+    validations:
+      required: true
+  - type: input
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: e.g. Depends on #12 (leave empty if none).
+    validations:
+      required: false

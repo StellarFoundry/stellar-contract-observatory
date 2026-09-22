@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a defect
+title: "fix: "
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Exact commands and inputs. Attach a minimal fixture if possible.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS and Rust version.
+    validations:
+      required: false
