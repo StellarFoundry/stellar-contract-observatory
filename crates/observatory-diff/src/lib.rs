@@ -47,6 +47,9 @@ pub enum ChangeKind {
     FunctionRemoved,
     /// A function changed.
     FunctionChanged,
+    /// A function was renamed (a removal and an addition with an identical
+    /// signature).
+    FunctionRenamed,
     /// A type was added.
     TypeAdded,
     /// A type was removed.
@@ -65,14 +68,15 @@ impl ChangeKind {
     fn rank(self) -> u8 {
         match self {
             ChangeKind::FunctionRemoved => 0,
-            ChangeKind::FunctionChanged => 1,
-            ChangeKind::FunctionAdded => 2,
-            ChangeKind::TypeRemoved => 3,
-            ChangeKind::TypeChanged => 4,
-            ChangeKind::TypeAdded => 5,
-            ChangeKind::EventRemoved => 6,
-            ChangeKind::EventChanged => 7,
-            ChangeKind::EventAdded => 8,
+            ChangeKind::FunctionRenamed => 1,
+            ChangeKind::FunctionChanged => 2,
+            ChangeKind::FunctionAdded => 3,
+            ChangeKind::TypeRemoved => 4,
+            ChangeKind::TypeChanged => 5,
+            ChangeKind::TypeAdded => 6,
+            ChangeKind::EventRemoved => 7,
+            ChangeKind::EventChanged => 8,
+            ChangeKind::EventAdded => 9,
         }
     }
 }
@@ -158,54 +162,137 @@ pub fn diff(old: &ContractInterface, new: &ContractInterface) -> InterfaceDiff {
 }
 
 fn diff_functions(old: &ContractInterface, new: &ContractInterface, out: &mut Vec<Change>) {
+    // Same-name changes.
     for function in &old.functions {
-        match new.function(&function.name) {
-            None => out.push(Change {
-                kind: ChangeKind::FunctionRemoved,
+        let Some(replacement) = new.function(&function.name) else {
+            continue;
+        };
+        if function == replacement {
+            continue;
+        }
+        if same_signature(function, replacement) {
+            out.push(Change {
+                kind: ChangeKind::FunctionChanged,
+                severity: Severity::Informational,
+                path: format!("function::{}", function.name),
+                detail: format!("documentation of `{}` changed", function.name),
+                old: None,
+                new: None,
+            });
+        } else {
+            out.push(Change {
+                kind: ChangeKind::FunctionChanged,
                 severity: Severity::Breaking,
                 path: format!("function::{}", function.name),
-                detail: format!("function `{}` was removed", function.name),
+                detail: describe_function_change(function, replacement),
                 old: Some(render_function(function)),
-                new: None,
-            }),
-            Some(replacement) => {
-                if function == replacement {
-                    continue;
-                }
-                if same_signature(function, replacement) {
-                    out.push(Change {
-                        kind: ChangeKind::FunctionChanged,
-                        severity: Severity::Informational,
-                        path: format!("function::{}", function.name),
-                        detail: format!("documentation of `{}` changed", function.name),
-                        old: None,
-                        new: None,
-                    });
-                } else {
-                    out.push(Change {
-                        kind: ChangeKind::FunctionChanged,
-                        severity: Severity::Breaking,
-                        path: format!("function::{}", function.name),
-                        detail: describe_function_change(function, replacement),
-                        old: Some(render_function(function)),
-                        new: Some(render_function(replacement)),
-                    });
-                }
-            }
-        }
-    }
-    for function in &new.functions {
-        if old.function(&function.name).is_none() {
-            out.push(Change {
-                kind: ChangeKind::FunctionAdded,
-                severity: Severity::NonBreaking,
-                path: format!("function::{}", function.name),
-                detail: format!("function `{}` was added", function.name),
-                old: None,
-                new: Some(render_function(function)),
+                new: Some(render_function(replacement)),
             });
         }
     }
+
+    let removed: Vec<&SpecFunction> = old
+        .functions
+        .iter()
+        .filter(|function| new.function(&function.name).is_none())
+        .collect();
+    let added: Vec<&SpecFunction> = new
+        .functions
+        .iter()
+        .filter(|function| old.function(&function.name).is_none())
+        .collect();
+
+    // Pair a removal with an addition only when their signature is identical
+    // and the pairing is unambiguous (exactly one removal and one addition for
+    // that signature). A signature with no parameters is too generic to anchor
+    // a rename, so it is never paired. Otherwise, do not guess.
+    let removed_by_signature = group_by_signature(&removed);
+    let added_by_signature = group_by_signature(&added);
+    let mut renamed: Vec<(&SpecFunction, &SpecFunction)> = Vec::new();
+    for (signature, removals) in &removed_by_signature {
+        if removals.iter().all(|function| function.inputs.is_empty()) {
+            continue;
+        }
+        if let Some(additions) = added_by_signature.get(signature) {
+            if removals.len() == 1 && additions.len() == 1 {
+                renamed.push((removals[0], additions[0]));
+            }
+        }
+    }
+    renamed.sort_by(|a, b| {
+        a.0.name
+            .cmp(&b.0.name)
+            .then_with(|| a.1.name.cmp(&b.1.name))
+    });
+
+    let paired_removed: std::collections::BTreeSet<&str> =
+        renamed.iter().map(|(old, _)| old.name.as_str()).collect();
+    let paired_added: std::collections::BTreeSet<&str> =
+        renamed.iter().map(|(_, new)| new.name.as_str()).collect();
+
+    for (old_function, new_function) in &renamed {
+        out.push(Change {
+            kind: ChangeKind::FunctionRenamed,
+            severity: Severity::Breaking,
+            path: format!("function::{}", old_function.name),
+            detail: format!(
+                "function `{}` was renamed to `{}` (identical signature)",
+                old_function.name, new_function.name
+            ),
+            old: Some(render_function(old_function)),
+            new: Some(render_function(new_function)),
+        });
+    }
+    for function in removed {
+        if paired_removed.contains(function.name.as_str()) {
+            continue;
+        }
+        out.push(Change {
+            kind: ChangeKind::FunctionRemoved,
+            severity: Severity::Breaking,
+            path: format!("function::{}", function.name),
+            detail: format!("function `{}` was removed", function.name),
+            old: Some(render_function(function)),
+            new: None,
+        });
+    }
+    for function in added {
+        if paired_added.contains(function.name.as_str()) {
+            continue;
+        }
+        out.push(Change {
+            kind: ChangeKind::FunctionAdded,
+            severity: Severity::NonBreaking,
+            path: format!("function::{}", function.name),
+            detail: format!("function `{}` was added", function.name),
+            old: None,
+            new: Some(render_function(function)),
+        });
+    }
+}
+
+fn group_by_signature<'a>(
+    functions: &[&'a SpecFunction],
+) -> std::collections::BTreeMap<String, Vec<&'a SpecFunction>> {
+    let mut groups: std::collections::BTreeMap<String, Vec<&SpecFunction>> =
+        std::collections::BTreeMap::new();
+    for function in functions {
+        groups
+            .entry(signature_key(function))
+            .or_default()
+            .push(function);
+    }
+    groups
+}
+
+fn signature_key(function: &SpecFunction) -> String {
+    let params = function
+        .inputs
+        .iter()
+        .map(|input| format!("{}:{}", input.name, input.ty))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("({params})->{}", render_outputs(&function.outputs))
 }
 
 fn diff_types(old: &ContractInterface, new: &ContractInterface, out: &mut Vec<Change>) {
@@ -550,5 +637,59 @@ mod tests {
         let first = diff(&old, &new);
         let second = diff(&old, &new);
         assert_eq!(first, second);
+    }
+
+    #[test]
+    fn detects_unambiguous_renames() {
+        let old = interface(vec![spec_function(
+            "transfer",
+            &[("to", ScSpecTypeDef::Address)],
+            Some(ScSpecTypeDef::Bool),
+        )]);
+        let new = interface(vec![spec_function(
+            "send",
+            &[("to", ScSpecTypeDef::Address)],
+            Some(ScSpecTypeDef::Bool),
+        )]);
+        let result = diff(&old, &new);
+        assert_eq!(result.changes.len(), 1);
+        assert_eq!(result.changes[0].kind, ChangeKind::FunctionRenamed);
+        assert_eq!(result.changes[0].severity, Severity::Breaking);
+        assert!(result.changes[0].detail.contains("renamed"));
+    }
+
+    #[test]
+    fn different_signature_is_not_a_rename() {
+        let old = interface(vec![spec_function("a", &[("x", ScSpecTypeDef::U32)], None)]);
+        let new = interface(vec![spec_function("b", &[("x", ScSpecTypeDef::U64)], None)]);
+        let result = diff(&old, &new);
+        assert!(!result
+            .changes
+            .iter()
+            .any(|change| change.kind == ChangeKind::FunctionRenamed));
+        assert!(result
+            .changes
+            .iter()
+            .any(|change| change.kind == ChangeKind::FunctionRemoved));
+        assert!(result
+            .changes
+            .iter()
+            .any(|change| change.kind == ChangeKind::FunctionAdded));
+    }
+
+    #[test]
+    fn ambiguous_signature_is_not_guessed() {
+        let old = interface(vec![
+            spec_function("a", &[], None),
+            spec_function("b", &[], None),
+        ]);
+        let new = interface(vec![spec_function("c", &[], None)]);
+        let result = diff(&old, &new);
+        assert!(!result
+            .changes
+            .iter()
+            .any(|change| change.kind == ChangeKind::FunctionRenamed));
+        assert_eq!(result.summary.breaking, 2);
+        assert_eq!(result.summary.non_breaking, 1);
     }
 }

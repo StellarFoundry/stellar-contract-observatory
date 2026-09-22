@@ -101,7 +101,9 @@ impl CompatibilityPolicy {
     pub fn is_breaking(&self, kind: ChangeKind) -> bool {
         match kind {
             ChangeKind::FunctionRemoved => self.function_removal_is_breaking,
-            ChangeKind::FunctionChanged => self.signature_change_is_breaking,
+            ChangeKind::FunctionRenamed | ChangeKind::FunctionChanged => {
+                self.signature_change_is_breaking
+            }
             ChangeKind::TypeRemoved => self.type_removal_is_breaking,
             ChangeKind::TypeChanged => self.type_change_is_breaking,
             ChangeKind::EventRemoved => self.event_removal_is_breaking,
