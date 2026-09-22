@@ -52,8 +52,10 @@ Tests include unit tests per crate and 9 end-to-end CLI integration tests.
 ## CI status
 
 A CI workflow (`.github/workflows/ci.yml`) runs format, clippy, tests on Linux,
-Windows, and macOS, and a documentation build. CI results live on the repository's
-Actions page; this document does not claim a passing run unless it was observed.
+Windows, and macOS, and a documentation build. On the initial `main` commit
+(`94dd8ba`) the workflow completed **successfully**: Format, Clippy, Docs, and
+Test on Ubuntu, Windows, and macOS all passed. Future results live on the
+repository's Actions page.
 
 ## Architecture
 
