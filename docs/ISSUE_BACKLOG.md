@@ -11,6 +11,13 @@ As of the initial implementation the backlog contains **40 open issues**.
 Every issue states Context, Problem, Objective, Scope, Acceptance criteria, and
 Testing. Dependencies are stated explicitly (`Depends on #X`).
 
+Following the Drips guide *Creating Meaningful Issues*, every issue also includes
+concrete **Relevant modules/files**, **Implementation guidance** (edge cases and
+constraints without micromanaging), an **Example commit message**, and
+**Guidelines** (assignment required, `Closes #`, and the local gate). Complexity
+is tagged with `complexity:trivial|medium|high`; individual issues never state a
+point or reward total.
+
 ## Themes by phase
 
 | Phase | Focus | Example issues |
