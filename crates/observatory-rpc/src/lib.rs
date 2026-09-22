@@ -15,6 +15,10 @@ use observatory_core::{ObservatoryError, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+pub mod net;
+
+pub use net::{AddressClass, SsrfPolicy};
+
 /// A JSON-RPC transport. Implementations move already-built envelopes.
 pub trait Transport {
     /// Send a JSON-RPC request envelope and return the response envelope.
@@ -105,6 +109,37 @@ impl Endpoint {
     #[must_use]
     pub fn is_loopback(&self) -> bool {
         self.loopback
+    }
+
+    /// The effective port, using scheme defaults when omitted.
+    #[must_use]
+    pub fn port(&self) -> u16 {
+        let (scheme, rest) = self.url.split_once("://").unwrap_or(("", ""));
+        let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+        let default = if scheme.eq_ignore_ascii_case("http") {
+            80
+        } else {
+            443
+        };
+        if let Some(stripped) = authority.strip_prefix('[') {
+            if let Some((_, after)) = stripped.split_once(']') {
+                if let Some(port) = after.strip_prefix(':').and_then(|p| p.parse().ok()) {
+                    return port;
+                }
+            }
+            return default;
+        }
+        authority
+            .rsplit_once(':')
+            .and_then(|(_, port)| port.parse().ok())
+            .unwrap_or(default)
+    }
+
+    /// Validate the endpoint host against the SSRF policy.
+    ///
+    /// A live transport must call this before connecting.
+    pub fn validate_ssrf(&self, policy: &SsrfPolicy) -> Result<Vec<std::net::IpAddr>> {
+        policy.validate(&self.host, self.port())
     }
 }
 
@@ -423,5 +458,33 @@ mod tests {
         assert_eq!(client.get_latest_ledger().unwrap().sequence, 9);
         assert!(client.get_network().is_err());
         assert!(MockTransport::from_json(&json!([])).is_err());
+    }
+
+    #[test]
+    fn endpoint_ports_use_scheme_defaults_and_overrides() {
+        assert_eq!(Endpoint::parse("https://example.org").unwrap().port(), 443);
+        assert_eq!(
+            Endpoint::parse("https://example.org:8443").unwrap().port(),
+            8443
+        );
+        assert_eq!(
+            Endpoint::parse("http://localhost:8000").unwrap().port(),
+            8000
+        );
+        assert_eq!(Endpoint::parse("http://localhost").unwrap().port(), 80);
+        assert_eq!(Endpoint::parse("https://[::1]:9000").unwrap().port(), 9000);
+    }
+
+    #[test]
+    fn endpoint_ssrf_policy_is_enforced() {
+        let public = Endpoint::parse("https://8.8.8.8").unwrap();
+        assert!(public.validate_ssrf(&SsrfPolicy::strict()).is_ok());
+
+        let loopback = Endpoint::parse("http://127.0.0.1:8080").unwrap();
+        assert!(loopback.validate_ssrf(&SsrfPolicy::strict()).is_err());
+        assert!(loopback.validate_ssrf(&SsrfPolicy::local()).is_ok());
+
+        let metadata = Endpoint::parse("https://169.254.169.254").unwrap();
+        assert!(metadata.validate_ssrf(&SsrfPolicy::local()).is_err());
     }
 }
