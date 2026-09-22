@@ -115,6 +115,9 @@ enum Command {
     /// Verify a local artifact against a deployment, or compare build metadata.
     #[command(subcommand)]
     Verify(VerifyCommand),
+    /// Run the REST API server or print its OpenAPI document.
+    #[command(subcommand)]
+    Api(ApiCommand),
     /// Report environment and capabilities.
     Doctor,
 }
@@ -165,6 +168,30 @@ enum VerifyCommand {
         /// Right metadata JSON file.
         right: PathBuf,
     },
+}
+
+#[derive(Debug, Subcommand)]
+enum ApiCommand {
+    /// Serve the REST API.
+    Serve {
+        /// Address to bind, for example 127.0.0.1:8080.
+        #[arg(long, default_value = "127.0.0.1:8080")]
+        bind: String,
+        /// Disable authentication (local development only).
+        #[arg(long)]
+        no_auth: bool,
+        /// Requests allowed per window.
+        #[arg(long)]
+        rate_limit: Option<u32>,
+        /// Rate-limit window length in seconds.
+        #[arg(long, default_value_t = 60)]
+        window_secs: u64,
+        /// Register a key as ROLE:PLAINTEXT (repeatable), for example developer:sco_...
+        #[arg(long = "key")]
+        keys: Vec<String>,
+    },
+    /// Print the OpenAPI document.
+    Openapi,
 }
 
 fn main() -> ExitCode {
@@ -370,6 +397,44 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
                     );
                 }
             })?;
+            Ok(ObservatoryExit::Success)
+        }
+        Command::Api(ApiCommand::Openapi) => {
+            let document = observatory_api::openapi::document();
+            let json = serde_json::to_string_pretty(&document)
+                .map_err(|error| ObservatoryError::internal(error.to_string()))?;
+            println!("{json}");
+            Ok(ObservatoryExit::Success)
+        }
+        Command::Api(ApiCommand::Serve {
+            bind,
+            no_auth,
+            rate_limit,
+            window_secs,
+            keys,
+        }) => {
+            let config = observatory_platform::PlatformConfig {
+                require_auth: !no_auth,
+                rate_limit: observatory_platform::RateLimitConfig {
+                    limit: rate_limit.unwrap_or(120),
+                    window_secs: *window_secs,
+                },
+            };
+            let api = observatory_api::Api::new(config);
+            for spec in keys {
+                let (role, plaintext) = spec.split_once(':').ok_or_else(|| {
+                    ObservatoryError::invalid(format!("--key must be ROLE:KEY, got `{spec}`"))
+                })?;
+                let role: observatory_platform::Role =
+                    role.parse().map_err(ObservatoryError::invalid)?;
+                api.insert_plaintext_key(plaintext, role, "cli")?;
+            }
+            let listener = std::net::TcpListener::bind(bind).map_err(ObservatoryError::Io)?;
+            let addr = listener.local_addr().map_err(ObservatoryError::Io)?;
+            if !cli.quiet {
+                eprintln!("stellar-contract-observatory API listening on http://{addr}");
+            }
+            observatory_api::http::serve(listener, std::sync::Arc::new(api));
             Ok(ObservatoryExit::Success)
         }
         Command::Doctor => {

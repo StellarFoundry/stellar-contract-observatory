@@ -157,3 +157,14 @@ fn missing_file_is_an_input_error() {
 fn invalid_arguments_are_a_usage_error() {
     binary().arg("not-a-command").assert().code(2);
 }
+
+#[test]
+fn api_openapi_documents_contract_routes() {
+    binary()
+        .args(["api", "openapi"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"openapi\""))
+        .stdout(predicate::str::contains("/api/v1/contracts/inspect"))
+        .stdout(predicate::str::contains("securitySchemes"));
+}
