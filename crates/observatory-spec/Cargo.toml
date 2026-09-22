@@ -1,0 +1,17 @@
+﻿[package]
+name = "observatory-spec"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Soroban contract specification parsing, normalization, and validation."
+
+[dependencies]
+observatory-core.workspace = true
+observatory-wasm.workspace = true
+serde.workspace = true
+stellar-xdr.workspace = true
+
+[dev-dependencies]
+observatory-testutil.workspace = true

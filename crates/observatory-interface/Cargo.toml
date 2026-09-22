@@ -1,0 +1,19 @@
+﻿[package]
+name = "observatory-interface"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Canonical contract interface model and deterministic interface fingerprinting."
+
+[dependencies]
+observatory-core.workspace = true
+observatory-spec.workspace = true
+observatory-wasm.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+observatory-testutil.workspace = true
+stellar-xdr.workspace = true
