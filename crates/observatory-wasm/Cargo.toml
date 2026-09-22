@@ -1,0 +1,18 @@
+[package]
+name = "observatory-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Safe, bounded WASM inspection and artifact fingerprinting for Soroban contracts."
+
+[dependencies]
+observatory-core.workspace = true
+serde.workspace = true
+wasmparser.workspace = true
+
+[dev-dependencies]
+observatory-testutil.workspace = true
+wat.workspace = true
+tempfile.workspace = true
