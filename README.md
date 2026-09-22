@@ -118,14 +118,30 @@ Exit codes: `0` success, `2` usage, `3` input, `4` parse, `5` unsupported,
 | `observatory-verify` | local-vs-deployed verification and build metadata |
 | `observatory-audit` | bounded interface/artifact heuristics |
 | `observatory-output` | versioned report envelopes and JSON rendering |
+| `observatory-platform` | service layer, API-key auth, RBAC, rate limiting, config |
+| `observatory-api` | versioned REST API, routing, HTTP adapter, OpenAPI |
 | `observatory-cli` | the `stellar-contract-observatory` binary |
 | `observatory-testutil` | deterministic fixture builders (test-only) |
+
+## Developer platform
+
+The same contract intelligence is available as a versioned REST API:
+
+```bash
+stellar-contract-observatory api serve --bind 127.0.0.1:8080 --no-auth
+stellar-contract-observatory api openapi
+```
+
+The API adds API-key authentication, role-based authorization, rate limiting,
+request IDs, and a generated OpenAPI document. It is a thin transport over the
+same services the CLI uses and contains no analysis logic. See [docs/API.md](docs/API.md).
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [Getting started](docs/getting-started.md)
 - [CLI reference](docs/cli.md)
+- [REST API](docs/API.md)
 - [Contract inspection](docs/contract-inspection.md)
 - [Contract specifications](docs/contract-specifications.md)
 - [Interface diff](docs/interface-diff.md)

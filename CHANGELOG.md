@@ -9,9 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Workspace with 14 crates covering inspection, specification, interface model,
-  events, diff, compatibility, RPC, deployment, verification, audit, output, and
-  the CLI.
+- Developer platform layer:
+  - `observatory-platform`: application service layer plus API-key
+    authentication (SHA-256 hashed secrets, never serialized), hierarchical
+    RBAC, fixed-window rate limiting, and strict platform configuration.
+  - `observatory-api`: versioned REST API at `/api/v1` with public
+    health/readiness/version endpoints and six contract endpoints (inspect,
+    spec, diff, compatibility, fingerprint, security), versioned report
+    envelopes, request IDs, rate-limit headers, and a generated OpenAPI document
+    that is kept in sync with the routes by a test.
+  - CLI: `api serve` and `api openapi`.
+- Workspace with 16 crates covering inspection, specification, interface model,
+  events, diff, compatibility, RPC, deployment, verification, audit, output,
+  platform, API, and the CLI.
 - `observatory-wasm`: bounded, non-executing WASM inspection (sections, imports,
   exports, memories, custom sections, code size) and SHA-256 artifact hashing.
 - `observatory-spec`: bounded `contractspecv0` parsing into a normalized,
