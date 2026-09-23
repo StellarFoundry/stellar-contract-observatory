@@ -141,6 +141,7 @@ same services the CLI uses and contains no analysis logic. See [docs/API.md](doc
 - [Architecture](docs/architecture.md)
 - [Getting started](docs/getting-started.md)
 - [CLI reference](docs/cli.md)
+- [Configuration](docs/configuration.md)
 - [REST API](docs/API.md)
 - [Contract inspection](docs/contract-inspection.md)
 - [Contract specifications](docs/contract-specifications.md)
@@ -155,6 +156,7 @@ same services the CLI uses and contains no analysis logic. See [docs/API.md](doc
 - [Security](docs/security.md)
 - [CI integration](docs/ci.md)
 - [Roadmap](docs/roadmap.md)
+- [Contributing through a Drips Wave](docs/WAVE.md)
 - [Project status](docs/PROJECT_STATUS.md)
 
 ## Status

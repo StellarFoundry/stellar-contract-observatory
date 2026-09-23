@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Project configuration: `observatory.yml`/`.yaml`/`.toml`/`.json` with strict
+  validation and auto-discovery, plus `--config`. Selects the compatibility
+  policy and API auth/rate-limit defaults, and provides a default network for
+  `verify`/`deployment`. See `docs/configuration.md`.
 - Developer platform layer:
   - `observatory-platform`: application service layer plus API-key
     authentication (SHA-256 hashed secrets, never serialized), hierarchical

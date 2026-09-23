@@ -42,6 +42,8 @@ stellar-xdr = { version = "28.0.0", features = ["serde", "base64", "alloc"] }
 stellar-strkey = "0.0.18"
 base64 = "0.22"
 getrandom = "0.2"
+serde_yml = "0.0.13"
+toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tempfile = "3"

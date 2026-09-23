@@ -285,3 +285,38 @@ fn diff_markdown_renders_severity_sections() {
         .stdout(predicate::str::contains("## Breaking"))
         .stdout(predicate::str::contains("`function::b`"));
 }
+
+#[test]
+fn config_file_selects_compatibility_policy() {
+    let old = write_temp(
+        &module_with_spec(&[spec_function("a", &[], None), spec_function("b", &[], None)]),
+        ".wasm",
+    );
+    let new = write_temp(&module_with_spec(&[spec_function("a", &[], None)]), ".wasm");
+    let config = write_temp(
+        b"analysis:\n  compatibility:\n    policy: lenient\n",
+        ".yml",
+    );
+    binary()
+        .args([
+            "compat",
+            old.path().to_str().unwrap(),
+            new.path().to_str().unwrap(),
+            "--config",
+            config.path().to_str().unwrap(),
+            "--json",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"status\": \"compatible\""));
+
+    // The same change is incompatible under the default strict policy.
+    binary()
+        .args([
+            "compat",
+            old.path().to_str().unwrap(),
+            new.path().to_str().unwrap(),
+        ])
+        .assert()
+        .code(6);
+}

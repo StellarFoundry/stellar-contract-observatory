@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use observatory_compat::{assess, CompatibilityPolicy, CompatibilityStatus};
+use observatory_compat::{assess, CompatibilityStatus};
 use observatory_core::{
     ExitCode as ObservatoryExit, Network, ObservatoryError, OutputFormat, Result,
 };
@@ -40,6 +40,10 @@ struct Cli {
     /// Output format.
     #[arg(long, value_enum, default_value_t = FormatArg::Text, global = true)]
     format: FormatArg,
+
+    /// Path to a project configuration file (`observatory.yml`/`.toml`/`.json`).
+    #[arg(long, global = true, value_name = "FILE")]
+    config: Option<PathBuf>,
 
     /// Increase logging verbosity (repeatable).
     #[arg(short, long, global = true, action = clap::ArgAction::Count)]
@@ -107,9 +111,9 @@ enum Command {
         old: PathBuf,
         /// Updated contract WASM.
         new: PathBuf,
-        /// Compatibility policy: `strict` or `lenient`.
-        #[arg(long, default_value = "strict")]
-        policy: String,
+        /// Compatibility policy: `strict` or `lenient` (overrides the project config).
+        #[arg(long)]
+        policy: Option<String>,
     },
     /// Compute deterministic fingerprints for a contract artifact.
     Fingerprint {
@@ -138,9 +142,9 @@ enum DeploymentCommand {
         /// JSON fixture mapping RPC method to result.
         #[arg(long)]
         rpc_fixture: PathBuf,
-        /// Network label.
-        #[arg(long, default_value = "testnet")]
-        network: String,
+        /// Network label (defaults to the project config, then `testnet`).
+        #[arg(long)]
+        network: Option<String>,
         /// RPC endpoint URL (recorded only in this build).
         #[arg(long)]
         rpc_url: Option<String>,
@@ -159,9 +163,9 @@ enum VerifyCommand {
         /// JSON fixture mapping RPC method to result.
         #[arg(long)]
         rpc_fixture: PathBuf,
-        /// Network label.
-        #[arg(long, default_value = "testnet")]
-        network: String,
+        /// Network label (defaults to the project config, then `testnet`).
+        #[arg(long)]
+        network: Option<String>,
     },
     /// Compare the local interface against the deployed contract's interface.
     Interface {
@@ -173,9 +177,9 @@ enum VerifyCommand {
         /// JSON fixture mapping RPC method to result.
         #[arg(long)]
         rpc_fixture: PathBuf,
-        /// Network label.
-        #[arg(long, default_value = "testnet")]
-        network: String,
+        /// Network label (defaults to the project config, then `testnet`).
+        #[arg(long)]
+        network: Option<String>,
     },
     /// Parse and print a build metadata JSON document.
     Metadata {
@@ -271,6 +275,7 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
             command_name(&cli.command)
         );
     }
+    let project = load_config(cli)?;
     match &cli.command {
         Command::Inspect { wasm, security } => {
             let bytes = observatory_wasm::load_file(wasm)?;
@@ -368,14 +373,15 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
             Ok(ObservatoryExit::Success)
         }
         Command::Compat { old, new, policy } => {
-            let policy = match policy.as_str() {
-                "strict" => CompatibilityPolicy::strict(),
-                "lenient" => CompatibilityPolicy::lenient(),
-                other => {
+            let policy = match policy.as_deref() {
+                Some("strict") => observatory_platform::CompatibilityPolicy::strict(),
+                Some("lenient") => observatory_platform::CompatibilityPolicy::lenient(),
+                Some(other) => {
                     return Err(ObservatoryError::invalid(format!(
                         "unknown policy `{other}`; expected strict or lenient"
                     )))
                 }
+                None => project.compatibility_policy()?,
             };
             let old_interface = load_interface(old)?;
             let new_interface = load_interface(new)?;
@@ -409,6 +415,7 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
             rpc_url,
         }) => {
             let client = fixture_client(rpc_fixture)?;
+            let network = resolve_network(&project, network);
             let _ = network.parse::<Network>()?;
             if let Some(url) = rpc_url {
                 let _ = Endpoint::parse(url)?;
@@ -425,8 +432,9 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
         }) => {
             let bytes = observatory_wasm::load_file(wasm)?;
             let client = fixture_client(rpc_fixture)?;
+            let network = resolve_network(&project, network);
             let result =
-                observatory_verify::verify_local_vs_deployed(&bytes, &client, contract, network)?;
+                observatory_verify::verify_local_vs_deployed(&bytes, &client, contract, &network)?;
             emit(format, "verify", &result, || print_verification(&result))?;
             Ok(match result.status {
                 VerificationStatus::Match => ObservatoryExit::Success,
@@ -444,7 +452,8 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
         }) => {
             let bytes = observatory_wasm::load_file(wasm)?;
             let client = fixture_client(rpc_fixture)?;
-            let result = observatory_verify::verify_interface(&bytes, &client, contract, network)?;
+            let network = resolve_network(&project, network);
+            let result = observatory_verify::verify_interface(&bytes, &client, contract, &network)?;
             emit(format, "verify.interface", &result, || {
                 print_interface_verification(&result);
             })?;
@@ -496,10 +505,18 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
             keys,
         }) => {
             let config = observatory_platform::PlatformConfig {
-                require_auth: !no_auth,
+                require_auth: if *no_auth {
+                    false
+                } else {
+                    project.api.require_auth
+                },
                 rate_limit: observatory_platform::RateLimitConfig {
-                    limit: rate_limit.unwrap_or(120),
-                    window_secs: *window_secs,
+                    limit: rate_limit.unwrap_or_else(|| project.rate_limit().limit),
+                    window_secs: if rate_limit.is_some() {
+                        *window_secs
+                    } else {
+                        project.rate_limit().window_secs
+                    },
                 },
             };
             let api = observatory_api::Api::new(config);
@@ -548,6 +565,26 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
             Ok(ObservatoryExit::Success)
         }
     }
+}
+
+fn load_config(cli: &Cli) -> Result<observatory_platform::ProjectConfig> {
+    if let Some(path) = &cli.config {
+        return observatory_platform::ProjectConfig::from_path(path);
+    }
+    let directory = std::env::current_dir().map_err(ObservatoryError::Io)?;
+    Ok(observatory_platform::ProjectConfig::discover(&directory)?
+        .map(|(_path, config)| config)
+        .unwrap_or_default())
+}
+
+fn resolve_network(
+    project: &observatory_platform::ProjectConfig,
+    provided: &Option<String>,
+) -> String {
+    provided
+        .clone()
+        .or_else(|| project.network().map(str::to_string))
+        .unwrap_or_else(|| "testnet".to_string())
 }
 
 fn load_interface(path: &Path) -> Result<ContractInterface> {
