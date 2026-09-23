@@ -56,5 +56,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The repository was renamed to `stellar-contract-platform`. The CLI binary
-  (`stellar-contract-observatory`), the `observatory-*` crates, and the product
+  (`stellar-contract-platform`), the `observatory-*` crates, and the product
   name remain unchanged; only the repository URL and clone instructions changed.

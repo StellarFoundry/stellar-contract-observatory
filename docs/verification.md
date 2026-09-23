@@ -9,7 +9,7 @@ what is being compared.
 executable hash.
 
 ```bash
-stellar-contract-observatory verify artifact contract.wasm \
+stellar-contract-platform verify artifact contract.wasm \
   --contract C... --rpc-fixture rpc.json --network testnet
 ```
 
@@ -41,7 +41,7 @@ comparison. Exit codes: `0` when the interfaces match, `7` when they differ, `8`
 when unknown.
 
 ```bash
-stellar-contract-observatory verify interface contract.wasm \
+stellar-contract-platform verify interface contract.wasm \
   --contract C... --rpc-fixture rpc.json --network testnet --json
 ```
 
@@ -54,7 +54,7 @@ key/value pairs.
 differing keys:
 
 ```bash
-stellar-contract-observatory verify compare build-a.json build-b.json --json
+stellar-contract-platform verify compare build-a.json build-b.json --json
 ```
 
 The comparison reports `equal`, `compared_keys`, and `differences`.

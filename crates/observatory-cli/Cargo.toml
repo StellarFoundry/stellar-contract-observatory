@@ -1,14 +1,14 @@
-﻿[package]
+[package]
 name = "observatory-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "The stellar-contract-observatory command-line interface."
+description = "The stellar-contract-platform command-line interface."
 
 [[bin]]
-name = "stellar-contract-observatory"
+name = "stellar-contract-platform"
 path = "src/main.rs"
 
 [dependencies]

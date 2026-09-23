@@ -33,7 +33,7 @@ jobs:
           cargo build --release --manifest-path baseline/Cargo.toml || true
       - name: Compare interfaces
         run: |
-          ./target/release/stellar-contract-observatory compat \
+          ./target/release/stellar-contract-platform compat \
             baseline/target/release/contract.wasm \
             contract.wasm --json > compat.json
 ```
@@ -43,7 +43,7 @@ jobs:
 ```yaml
       - name: Verify artifact
         run: |
-          ./target/release/stellar-contract-observatory verify artifact \
+          ./target/release/stellar-contract-platform verify artifact \
             contract.wasm --contract C... --rpc-fixture ci/rpc.json --network testnet
 ```
 

@@ -15,7 +15,7 @@ pub use network::Network;
 pub use output::OutputFormat;
 
 /// The binary/tool name used in user-facing output.
-pub const TOOL_NAME: &str = "stellar-contract-observatory";
+pub const TOOL_NAME: &str = "stellar-contract-platform";
 
 /// The machine-readable output schema version emitted with every JSON report.
 pub const SCHEMA_VERSION: &str = "1.0";

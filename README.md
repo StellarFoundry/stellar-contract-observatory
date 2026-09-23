@@ -3,7 +3,7 @@
 Contract intelligence, inspection, interface analysis, compatibility, deployment
 verification, and reproducibility tooling for **Stellar / Soroban** contracts.
 
-`stellar-contract-observatory` is a Rust-first, offline-by-default toolkit that
+`stellar-contract-platform` is a Rust-first, offline-by-default toolkit that
 answers concrete questions about a Soroban contract artifact:
 
 - What is inside this WASM?
@@ -70,7 +70,7 @@ Every command supports stable machine-readable JSON via `--json`.
 
 ```bash
 cargo build --release
-./target/release/stellar-contract-observatory doctor
+./target/release/stellar-contract-platform doctor
 ```
 
 A recent stable Rust toolchain is required.
@@ -79,23 +79,23 @@ A recent stable Rust toolchain is required.
 
 ```bash
 # Inspect an artifact (JSON)
-stellar-contract-observatory inspect contract.wasm --json
+stellar-contract-platform inspect contract.wasm --json
 
 # Summarize the contract specification
-stellar-contract-observatory spec contract.wasm
+stellar-contract-platform spec contract.wasm
 
 # Diff two interfaces and assess compatibility
-stellar-contract-observatory diff old.wasm new.wasm
-stellar-contract-observatory compat old.wasm new.wasm
+stellar-contract-platform diff old.wasm new.wasm
+stellar-contract-platform compat old.wasm new.wasm
 
 # Fingerprints
-stellar-contract-observatory fingerprint contract.wasm --json
+stellar-contract-platform fingerprint contract.wasm --json
 
 # Analyze an event fixture
-stellar-contract-observatory events events.json --topic transfer
+stellar-contract-platform events events.json --topic transfer
 
 # Verify against a deterministic RPC fixture
-stellar-contract-observatory verify artifact contract.wasm \
+stellar-contract-platform verify artifact contract.wasm \
   --contract C... --rpc-fixture rpc.json --network testnet
 ```
 
@@ -120,7 +120,7 @@ Exit codes: `0` success, `2` usage, `3` input, `4` parse, `5` unsupported,
 | `observatory-output` | versioned report envelopes and JSON rendering |
 | `observatory-platform` | service layer, API-key auth, RBAC, rate limiting, config |
 | `observatory-api` | versioned REST API, routing, HTTP adapter, OpenAPI |
-| `observatory-cli` | the `stellar-contract-observatory` binary |
+| `observatory-cli` | the `stellar-contract-platform` binary |
 | `observatory-testutil` | deterministic fixture builders (test-only) |
 
 ## Developer platform
@@ -128,8 +128,8 @@ Exit codes: `0` success, `2` usage, `3` input, `4` parse, `5` unsupported,
 The same contract intelligence is available as a versioned REST API:
 
 ```bash
-stellar-contract-observatory api serve --bind 127.0.0.1:8080 --no-auth
-stellar-contract-observatory api openapi
+stellar-contract-platform api serve --bind 127.0.0.1:8080 --no-auth
+stellar-contract-platform api openapi
 ```
 
 The API adds API-key authentication, role-based authorization, rate limiting,

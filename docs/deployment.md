@@ -21,7 +21,7 @@ abstraction. This build ships a deterministic **fixture transport**; the live
 HTTP transport is tracked as future work.
 
 ```bash
-stellar-contract-observatory deployment inspect C... \
+stellar-contract-platform deployment inspect C... \
   --rpc-fixture rpc.json --network testnet
 ```
 

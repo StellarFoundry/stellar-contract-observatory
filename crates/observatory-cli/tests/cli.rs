@@ -10,7 +10,7 @@ use predicates::prelude::*;
 use stellar_xdr::{ScSpecEntry, ScSpecTypeDef};
 
 fn binary() -> Command {
-    Command::cargo_bin("stellar-contract-observatory").expect("binary builds")
+    Command::cargo_bin("stellar-contract-platform").expect("binary builds")
 }
 
 fn write_temp(bytes: &[u8], suffix: &str) -> tempfile::NamedTempFile {

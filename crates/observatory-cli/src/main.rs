@@ -1,4 +1,4 @@
-//! `stellar-contract-observatory` command-line interface.
+//! `stellar-contract-platform` command-line interface.
 //!
 //! Exit codes:
 //! * `0` success
@@ -27,7 +27,7 @@ use serde::Serialize;
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "stellar-contract-observatory",
+    name = "stellar-contract-platform",
     version,
     about = "Contract intelligence, inspection, compatibility, and verification for Stellar/Soroban",
     long_about = None
@@ -514,7 +514,7 @@ fn run(cli: &Cli, format: OutputFormat) -> Result<ObservatoryExit> {
             let listener = std::net::TcpListener::bind(bind).map_err(ObservatoryError::Io)?;
             let addr = listener.local_addr().map_err(ObservatoryError::Io)?;
             if !cli.quiet {
-                eprintln!("stellar-contract-observatory API listening on http://{addr}");
+                eprintln!("stellar-contract-platform API listening on http://{addr}");
             }
             observatory_api::http::serve(listener, std::sync::Arc::new(api));
             Ok(ObservatoryExit::Success)

@@ -7,16 +7,16 @@ no analysis of its own.
 - Base path: `/api/v1`
 - Content type: `application/json`
 - Transport: a minimal bounded HTTP/1.1 adapter (`observatory-api::http`)
-- OpenAPI: `stellar-contract-observatory api openapi`
+- OpenAPI: `stellar-contract-platform api openapi`
 
 ## Running locally
 
 ```bash
 # Read-only dev server with authentication disabled
-stellar-contract-observatory api serve --bind 127.0.0.1:8080 --no-auth
+stellar-contract-platform api serve --bind 127.0.0.1:8080 --no-auth
 
 # With authentication and a pre-registered key
-stellar-contract-observatory api serve --bind 127.0.0.1:8080 \
+stellar-contract-platform api serve --bind 127.0.0.1:8080 \
   --key developer:sco_<id>_<secret>
 ```
 
@@ -111,7 +111,7 @@ Body: `{ "wasm_base64": "..." }`. Returns bounded heuristic findings.
 Success:
 
 ```json
-{ "schema_version": "1.0", "kind": "inspect", "tool": "stellar-contract-observatory", "version": "0.1.0", "data": { } }
+{ "schema_version": "1.0", "kind": "inspect", "tool": "stellar-contract-platform", "version": "0.1.0", "data": { } }
 ```
 
 Error:

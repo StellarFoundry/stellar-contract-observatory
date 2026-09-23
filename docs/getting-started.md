@@ -10,12 +10,12 @@ cd stellar-contract-platform
 cargo build --release
 ```
 
-The binary is `target/release/stellar-contract-observatory`.
+The binary is `target/release/stellar-contract-platform`.
 
 ## First run
 
 ```bash
-stellar-contract-observatory doctor
+stellar-contract-platform doctor
 ```
 
 `doctor` prints capabilities, the active RPC transport (fixture/mock only), and
@@ -24,8 +24,8 @@ known networks.
 ## Inspect an artifact
 
 ```bash
-stellar-contract-observatory inspect contract.wasm
-stellar-contract-observatory inspect contract.wasm --json
+stellar-contract-platform inspect contract.wasm
+stellar-contract-platform inspect contract.wasm --json
 ```
 
 Inspection is static and bounded; the artifact is never executed.
@@ -33,15 +33,15 @@ Inspection is static and bounded; the artifact is never executed.
 ## Read the interface
 
 ```bash
-stellar-contract-observatory spec contract.wasm
-stellar-contract-observatory spec contract.wasm --function transfer
+stellar-contract-platform spec contract.wasm
+stellar-contract-platform spec contract.wasm --function transfer
 ```
 
 ## Compare two versions
 
 ```bash
-stellar-contract-observatory diff old.wasm new.wasm
-stellar-contract-observatory compat old.wasm new.wasm
+stellar-contract-platform diff old.wasm new.wasm
+stellar-contract-platform compat old.wasm new.wasm
 ```
 
 `compat` exits `6` when an interface change is incompatible under the active
@@ -50,7 +50,7 @@ policy, which is useful in CI.
 ## Fingerprints
 
 ```bash
-stellar-contract-observatory fingerprint contract.wasm --json
+stellar-contract-platform fingerprint contract.wasm --json
 ```
 
 The artifact fingerprint and the canonical interface fingerprint are different:

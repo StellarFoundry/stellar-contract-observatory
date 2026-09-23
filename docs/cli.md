@@ -1,7 +1,7 @@
 # CLI reference
 
 ```
-stellar-contract-observatory [OPTIONS] <COMMAND>
+stellar-contract-platform [OPTIONS] <COMMAND>
 ```
 
 ## Global options
@@ -88,7 +88,7 @@ Every `--json` report has the shape:
 {
   "schema_version": "1.0",
   "kind": "inspect",
-  "tool": "stellar-contract-observatory",
+  "tool": "stellar-contract-platform",
   "version": "0.1.0",
   "data": { }
 }
