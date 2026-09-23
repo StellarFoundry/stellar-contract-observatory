@@ -108,6 +108,20 @@ purpose: filling to a target number would create duplicates and busywork, which
 the project's contribution rules forbid. Additional issues should be filed as
 the implementation evolves, not pre-generated.
 
+## Issue-quality audit
+
+The backlog is audited against the Drips *Creating Meaningful Issues* guidance:
+
+- Every issue carries exactly one `complexity:trivial|medium|high` label.
+- Every issue contains Context, Problem, Objective, Scope, Acceptance criteria,
+  Testing, Relevant modules/files, Implementation guidance, an example commit
+  message, and Guidelines.
+- No duplicate titles (checked programmatically).
+- No reward, point, or budget figures anywhere.
+- Dependencies are explicit and non-circular.
+- Complexity is assigned from each issue's own scope, never from an aggregate
+  target.
+
 ## Creating new issues
 
 Use the feature or bug template. Include a concrete objective, scope, and
