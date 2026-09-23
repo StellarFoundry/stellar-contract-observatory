@@ -4,7 +4,7 @@ This document summarizes the issue backlog by phase. It is a map, not a
 contract. Every issue is real engineering work derived from the current
 architecture; there are no placeholder or filler issues.
 
-As of the platform/API increment the backlog contains **60 open issues**.
+As of the expanded backlog the repository contains **130 open issues**.
 
 ## How to read an issue
 
@@ -73,6 +73,32 @@ actual new surface:
 | SDKs (Python, TypeScript, Rust) | #49, #50, #51 |
 | API + live RPC integration | #52, #53, #58 |
 | HTTP hardening and load | #59, #60 |
+
+## Depth and platform-hardening themes (issues #61–#130)
+
+A second expansion added 70 distinct issues derived from the real surface, with
+no duplicates of the first 60:
+
+| Theme | Example issues |
+| ----- | -------------- |
+| WASM depth (name/producers sections, memory64, streaming hash, component rejection) | #61–#66 |
+| Specification depth (docs rendering, length limits, UDT docs) | #67–#69 |
+| Interface depth (round-trip, schema policy, subset check) | #70–#72 |
+| Diff/compat depth (type/event renames, filters, policies) | #73–#81 |
+| Fingerprinting options (algorithm, events-only, doc-insensitive) | #82–#84 |
+| Events depth (structured filters, ledger ranges, CSV, raw XDR, schema) | #85–#88, #112 |
+| Audit/security model (confidence/evidence, suppressions, SARIF, rule config) | #89, #90, #113–#116 |
+| RPC depth (retry, timeouts, limits, error taxonomy, getContractData, health) | #117–#122 |
+| Deployment/verify depth (networks, storage, cross-network, batch, exit policy) | #91–#95 |
+| Reproducibility (dependency metadata, SBOM) | #96, #97 |
+| API hardening (pagination, idempotency, negotiation, error catalog, scopes) | #98, #99, #123–#127 |
+| Observability (tracing, redaction, Prometheus) | #100, #101, #128 |
+| Configuration (profiles, precedence) | #102, #129 |
+| CI/release (OpenAPI validation, dependency audit, fuzz smoke, coverage, binaries, SBOM, container) | #103–#109 |
+| Documentation (ADRs, glossary) | #110, #130 |
+
+The count is a consequence of the engineering surface, not a target: each issue
+was authored independently and audited for duplicates before creation.
 
 ## Scope note
 

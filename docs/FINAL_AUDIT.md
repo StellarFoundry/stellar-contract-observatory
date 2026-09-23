@@ -94,10 +94,11 @@ ISSUE_BACKLOG, FINAL_AUDIT.
 
 ## Contributor backlog
 
-60 open issues, each with Context, Problem, Objective, Scope, Acceptance
+130 open issues, each with Context, Problem, Objective, Scope, Acceptance
 criteria, Testing, Relevant modules/files, Implementation guidance, an example
 commit message, and guidelines. Dependencies are explicit. No aggregate point or
-reward figures are published anywhere.
+reward figures are published anywhere, and an automated audit found zero
+duplicate titles.
 
 ## Known limitations
 
